@@ -1,0 +1,125 @@
+<!-- appointments/templates/appointments/email_notification.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointment Confirmation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            padding: 20px;
+        }
+        .footer {
+            text-align: center;
+            font-size: 0.8em;
+            color: #777;
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+        .button {
+            display: inline-block;
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Appointment Confirmation</h2>
+        </div>
+        <div class="content">
+            <p>Hello {{ appointment.user.username }},</p>
+            <p>Your appointment has been successfully booked with {{ appointment.provider.user.username }}.</p>
+            
+            <h3>Appointment Details:</h3>
+            <table>
+                <tr>
+                    <th>Service:</th>
+                    <td>{{ appointment.service.name }}</td>
+                </tr>
+                <tr>
+                    <th>Provider:</th>
+                    <td>{{ appointment.provider.user.username }}</td>
+                </tr>
+                <tr>
+                    <th>Date:</th>
+                    <td>{{ appointment.appointment_date|date:"F d, Y" }}</td>
+                </tr>
+                <tr>
+                    <th>Time:</th>
+                    <td>{{ appointment.appointment_time|time:"h:i A" }}</td>
+                </tr>
+                <tr>
+                    <th>Duration:</th>
+                    <td>{{ appointment.service.duration_minutes }} minutes</td>
+                </tr>
+                <tr>
+                    <th>Price:</th>
+                    <td>${{ appointment.service.price }}</td>
+                </tr>
+                <tr>
+                    <th>Status:</th>
+                    <td>{{ appointment.get_status_display }}</td>
+                </tr>
+                <tr>
+                    <th>Payment Status:</th>
+                    <td>{{ appointment.get_payment_status_display }}</td>
+                </tr>
+                {% if appointment.notes %}
+                <tr>
+                    <th>Notes:</th>
+                    <td>{{ appointment.notes }}</td>
+                </tr>
+                {% endif %}
+            </table>
+
+            <p>You can view your appointments anytime by visiting <a href="{{ request.scheme }}://{{ request.get_host }}{% url 'appointment_list' %}">My Appointments</a>.</p>
+            
+            <p>Thank you for choosing our service!</p>
+        </div>
+        <div class="footer">
+            <p>&copy; {{ "now"|date:"Y" }} Your Booking System. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

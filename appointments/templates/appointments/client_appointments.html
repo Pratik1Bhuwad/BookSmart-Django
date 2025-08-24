@@ -1,0 +1,82 @@
+<!-- appointments/templates/appointments/client_appointments.html -->
+{% extends 'appointments/base.html' %}
+
+{% block title %}My Appointments{% endblock %}
+
+{% block content %}
+    <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">My Appointments</h1>
+    
+    <div class="list-group">
+        {% for appt in appointments %}
+            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                <div>
+                    <h5>{{ appt.provider_service.name }} by {{ appt.provider_service.provider.user.username }}</h5>
+                    <p class="mb-1"><strong>Date:</strong> {{ appt.date }}</p>
+                    <p class="mb-1"><strong>Time:</strong> {{ appt.time_slot.start_time }}</p>
+                    <p class="mb-1"><strong>Status:</strong> <span class="badge bg-primary">{{ appt.status }}</span></p>
+                </div>
+                <div class="ms-auto">
+                    {% if appt.status == 'approved' %}
+                        <button
+                            class="btn btn-success"
+                            onclick="redirectToCheckout('{{ appt.pk }}')"
+                        >
+                            Pay Now (${{ appt.provider_service.price }})
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Stripe.js script -->
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+        const stripe = Stripe('{{ settings.STRIPE_PUBLISHABLE_KEY }}');
+
+        function redirectToCheckout(appointmentId) {
+            fetch(`/create-checkout-session/${appointmentId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({})
+            })
+            .then(response => response.json())
+            .then(session => {
+                if (session.error) {
+                    console.error('Error creating checkout session:', session.error);
+                    alert('Could not initiate payment: ' + session.error);
+                } else {
+                    return stripe.redirectToCheckout({ sessionId: session.sessionId });
+                }
+            })
+            .then(result => {
+                if (result.error) {
+                    console.error('Stripe Checkout error:', result.error.message);
+                    alert('Payment failed: ' + result.error.message);
+                }
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                alert('An unexpected error occurred during payment initiation.');
+            });
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+{% endblock %}

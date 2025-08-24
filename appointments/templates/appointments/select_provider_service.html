@@ -1,0 +1,40 @@
+<!-- appointments/templates/appointments/select_provider_service.html -->
+{% extends 'appointments/base.html' %}
+
+{% block title %}Providers for {{ subcategory.name }}{% endblock %}
+
+{% block content %}
+    <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">Providers Offering {{ subcategory.name }}</h1>
+    
+    <div class="mb-4">
+        <!-- Add a search and filter UI here -->
+        <!-- This is where you would add your filter dropdowns for location -->
+    </div>
+    
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for ps in provider_services %}
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    {% if ps.image %}
+                        <img src="{{ ps.image.url }}" class="card-img-top" alt="{{ ps.name }}" style="height: 180px; object-fit: cover;">
+                    {% endif %}
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title text-indigo-600">{{ ps.name }}</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">by {{ ps.provider.user.username }}</h6>
+                        <p class="card-text text-muted small">{{ ps.description|truncatechars:70 }}</p>
+                        <p class="card-text mt-2">
+                            <span class="badge bg-primary text-white mb-2">{{ ps.duration_minutes }} min</span>
+                            <span class="badge bg-success text-white mb-2">${{ ps.price }}</span>
+                            {% for location in ps.locations.all %}
+                                <span class="badge bg-info text-white mb-2">{{ location.name }}</span>
+                            {% endfor %}
+                        </p>
+                        <div class="mt-auto">
+                            <a href="{% url 'appointment_request' provider_service_id=ps.pk %}" class="btn btn-primary w-100">Request Appointment</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

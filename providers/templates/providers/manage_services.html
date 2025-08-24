@@ -1,0 +1,143 @@
+<!-- providers/templates/providers/manage_services.html -->
+{% extends 'providers/base_provider.html' %}
+{% load static %}
+
+{% block title %}Manage Services{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Manage Your Services</h1>
+    <p class="lead">Add, view, and update your service offerings.</p>
+
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">Add a New Service Offering</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.category.id_for_label }}" class="form-label">{{ form.category.label }}</label>
+                        {{ form.category }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.sub_category.id_for_label }}" class="form-label">{{ form.sub_category.label }}</label>
+                        {{ form.sub_category }}
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+                    {{ form.name }}
+                </div>
+                <div class="mb-3">
+                    <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+                    {{ form.description }}
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.duration_minutes.id_for_label }}" class="form-label">{{ form.duration_minutes.label }}</label>
+                        {{ form.duration_minutes }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.price.id_for_label }}" class="form-label">{{ form.price.label }}</label>
+                        {{ form.price }}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="{{ form.image.id_for_label }}" class="form-label">{{ form.image.label }}</label>
+                    {{ form.image }}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Service Locations</label>
+                    <div class="form-check">
+                        {{ form.locations }}
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-success">Add Service</button>
+            </form>
+        </div>
+    </div>
+    
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Your Current Services</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% for ps in provider_services %}
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="row g-0 align-items-center">
+                            <!-- Image Section -->
+                            <div class="col-md-4">
+                                {% if ps.image %}
+                                    <img src="{{ ps.image.url }}" class="img-fluid rounded-start h-100" alt="{{ ps.name }}" style="object-fit: cover;">
+                                {% else %}
+                                    <img src="https://placehold.co/150x150" class="img-fluid rounded-start h-100" alt="No Image" style="object-fit: cover;">
+                                {% endif %}
+                            </div>
+
+                            <!-- Details + Buttons -->
+                            <div class="col-md-8">
+                                <div class="card-body d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h5 class="card-title">{{ ps.name }}</h5>
+                                        <p class="card-text">
+                                            <span class="badge bg-secondary">{{ ps.duration_minutes }} min</span>
+                                            <span class="badge bg-success">${{ ps.price }}</span>
+                                        </p>
+                                        <p class="card-text"><small class="text-muted">{{ ps.description }}</small></p>
+                                    </div>
+                                    <div class="text-end">
+                                        <a href="{% url 'edit_provider_service' ps.pk %}" class="btn btn-sm btn-warning">Edit</a>
+                                        <a href="{% url 'remove_offered_service' ps.pk %}" class="btn btn-sm btn-danger">Delete</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <p>You have not added any services yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            var categorySelect = $('#id_category');
+            var subcategorySelect = $('#id_sub_category');
+            
+            categorySelect.change(function() {
+                var categoryId = $(this).val();
+                if (categoryId) {
+                    $.ajax({
+                        url: "{% url 'get_subcategories' 0 %}".replace('/0/', '/' + categoryId + '/'),
+                        data: { 'category_id': categoryId },
+                        dataType: 'json',
+                        success: function(data) {
+                            subcategorySelect.empty();
+                            subcategorySelect.append($('<option>').val('').text('--- Select a sub-category ---'));
+                            $.each(data, function(key, value) {
+                                subcategorySelect.append($('<option>').val(value.id).text(value.name));
+                            });
+                        }
+                    });
+                } else {
+                    subcategorySelect.empty();
+                    subcategorySelect.append($('<option>').val('').text('--- Select a sub-category ---'));
+                }
+            });
+            
+            // Trigger change on page load if a category is already selected
+            if (categorySelect.val()) {
+                categorySelect.trigger('change');
+            }
+        });
+        
+    </script>
+{% endblock %}

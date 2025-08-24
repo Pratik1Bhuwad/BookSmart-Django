@@ -1,0 +1,108 @@
+<!-- appointments/templates/appointments/appointment_list.html -->
+{% extends 'appointments/base.html' %}
+
+{% block title %}My Upcoming Appointments{% endblock %}
+
+{% block content %}
+    <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">My Upcoming Appointments</h1>
+
+    {% if appointments %}
+        <div class="space-y-4">
+            {% for appointment in appointments %}
+                <div class="appointment-card bg-f9fafb border border-e5e7eb rounded-xl p-5 mb-4 flex flex-col gap-2">
+                    <p class="text-lg font-semibold text-indigo-700">
+                        {{ appointment.service.name }}
+                        {% if appointment.provider %}
+                            <span class="text-sm text-gray-600"> (with {{ appointment.provider.user.username }})</span>
+                        {% endif %}
+                    </p>
+                    <p class="text-gray-700"><strong>Date:</strong> {{ appointment.appointment_date|date:"F d, Y" }}</p>
+                    <p class="text-gray-700"><strong>Time:</strong> {{ appointment.appointment_time|time:"h:i A" }}</p>
+                    <p class="text-gray-700"><strong>Duration:</strong> {{ appointment.service.duration_minutes }} minutes</p>
+                    <p class="text-gray-700"><strong>Price:</strong> ${{ appointment.service.price }}</p>
+                    <p class="text-gray-700"><strong>Status:</strong> <span class="font-medium {% if appointment.status == 'booked' %}text-green-600{% elif appointment.status == 'cancelled' %}text-red-600{% else %}text-gray-600{% endif %}">{{ appointment.get_status_display }}</span></p>
+                    <p class="text-gray-700"><strong>Payment Status:</strong> <span class="font-medium {% if appointment.payment_status == 'paid' %}text-green-600{% elif appointment.payment_status == 'pending' %}text-yellow-600{% elif appointment.payment_status == 'failed' %}text-red-600{% endif %}">{{ appointment.get_payment_status_display }}</span></p>
+                    {% if appointment.notes %}
+                        <p class="text-gray-600 text-sm"><strong>Notes:</strong> {{ appointment.notes }}</p>
+                    {% endif %}
+                    <p class="text-gray-500 text-xs mt-2">Booked on: {{ appointment.created_at|date:"F d, Y H:i" }}</p>
+
+                    <div class="flex flex-wrap gap-2 mt-4">
+                        {% if appointment.status == 'booked' %}
+                            <form method="post" action="{% url 'cancel_appointment' appointment.pk %}" class="inline-block">
+                                {% csrf_token %}
+                                <button type="submit" class="px-4 py-2 bg-red-500 text-black font-semibold rounded-md hover:bg-red-600 transition duration-200 text-sm">Cancel Appointment</button>
+                            </form>
+                        {% endif %}
+
+                        {% if appointment.payment_status == 'pending' and appointment.status == 'booked' %}
+                            <button
+                                class="px-4 py-2 bg-green-500 text-black font-semibold rounded-md hover:bg-green-600 transition duration-200 text-sm"
+                                onclick="redirectToCheckout('{{ appointment.pk }}')"
+                            >
+                                Pay Now (${{ appointment.service.price }})
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-center py-10 text-gray-600 text-lg">You have no upcoming booked appointments.</p>
+    {% endif %}
+
+    <div class="mt-8 text-center">
+        <a href="{% url 'book_appointment' %}" class="inline-block px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition duration-200">Book a New Appointment</a>
+    </div>
+
+    <!-- Stripe.js script -->
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+        const stripe = Stripe('{{ settings.STRIPE_PUBLISHABLE_KEY }}');
+
+        function redirectToCheckout(appointmentId) {
+            fetch(`/create-checkout-session/${appointmentId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({})
+            })
+            .then(response => response.json())
+            .then(session => {
+                if (session.error) {
+                    console.error('Error creating checkout session:', session.error);
+                    alert('Could not initiate payment: ' + session.error);
+                } else {
+                    return stripe.redirectToCheckout({ sessionId: session.sessionId });
+                }
+            })
+            .then(result => {
+                if (result.error) {
+                    console.error('Stripe Checkout error:', result.error.message);
+                    alert('Payment failed: ' + result.error.message);
+                }
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                alert('An unexpected error occurred during payment initiation.');
+            });
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+{% endblock %}

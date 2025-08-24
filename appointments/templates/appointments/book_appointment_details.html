@@ -1,0 +1,243 @@
+<!-- appointments/templates/appointments/book_appointment_details.html -->
+{% extends 'appointments/base.html' %}
+
+{% block title %}Book {{ service.name }} with {{ provider.user.username }}{% endblock %}
+
+{% block content %}
+    <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">Book Appointment</h1>
+    <h4 class="text-center text-muted mb-4">{{ service.name }} ({{ service.duration_minutes }} min) with {{ provider.user.username }}</h4>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        {# Hidden fields for pre-selected service and provider #}
+        <input type="hidden" name="service" id="id_service" value="{{ service.pk }}">
+        <input type="hidden" name="provider" id="id_provider" value="{{ provider.pk }}">
+
+        {# Date and Time Picker Section #}
+        <div class="form-group">
+            <label for="{{ form.appointment_date.id_for_label }}" class="form-label">{{ form.appointment_date.label }}</label>
+            {# Changed type to text for Flatpickr, Flatpickr will attach the calendar #}
+            <input type="text" name="{{ form.appointment_date.name }}" id="{{ form.appointment_date.id_for_label }}" class="form-input form-control" value="{{ form.appointment_date.value|default:'' }}" placeholder="Select a date">
+            {% if form.appointment_date.errors %}
+                <ul class="errorlist">
+                    {% for error in form.appointment_date.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            <small class="form-text text-muted">Select a date to see available time slots.</small>
+        </div>
+
+        <div class="form-group" id="time-picker-container" style="display: none;">
+            <label for="{{ form.appointment_time.id_for_label }}" class="form-label">{{ form.appointment_time.label }}</label>
+            <div id="time-slots" class="d-flex flex-wrap gap-2 mt-2">
+                <!-- Time slots will be generated here -->
+            </div>
+            {# IMPORTANT: The actual time value needs to be submitted with the form #}
+            <input type="hidden" name="appointment_time" id="id_appointment_time">
+            {% if form.appointment_time.errors %}
+                <ul class="errorlist">
+                    {% for error in form.appointment_time.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+
+        {# Notes fields #}
+        <div class="form-group">
+            <label for="{{ form.notes.id_for_label }}" class="form-label">{{ form.notes.label }}</label>
+            {{ form.notes }}
+            {% if form.notes.errors %}
+                <ul class="errorlist">
+                    {% for error in form.notes.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                    </ul>
+            {% endif %}
+        </div>
+
+        {% if form.non_field_errors %}
+            <ul class="errorlist">
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <button type="submit" class="submit-button">Book Now</button>
+    </form>
+
+    {# Flatpickr CSS #}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    {# Flatpickr JavaScript #}
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dateInput = document.getElementById('id_appointment_date');
+            const timeContainer = document.getElementById('time-picker-container');
+            const timeSlotsDiv = document.getElementById('time-slots');
+            const timeInput = document.getElementById('id_appointment_time');
+
+            // Pre-selected values from Django context
+            const providerId = '{{ provider.pk }}';
+            const serviceId = '{{ service.pk }}';
+            const serviceDuration = {{ service.duration_minutes }};
+
+            let availabilityData = {};
+
+            // Initialize Flatpickr
+            flatpickr(dateInput, {
+                dateFormat: "Y-m-d", // Format for Django DateField
+                minDate: "today",    // Prevent selecting past dates
+                onChange: function(selectedDates, dateStr, instance) {
+                    // This ensures updateUI is called when Flatpickr changes the date
+                    renderTimeSlotsFromDate();
+                }
+            });
+
+            // Initial fetch of availability data on page load
+            async function fetchAvailabilityAndRender() {
+                showLoading('Fetching availability data...');
+                try {
+                    const url = `/get-provider-availability/?provider_id=${providerId}`;
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    availabilityData = await response.json();
+                    
+                    // If a date is already in the input (e.g., from a form error), render the slots immediately
+                    if (dateInput.value) {
+                        renderTimeSlotsFromDate();
+                    }
+                } catch (error) {
+                    console.error('Error fetching availability:', error);
+                    timeSlotsDiv.innerHTML = `<p class="text-danger">Failed to load availability data. Please refresh.</p>`;
+                }
+            }
+
+            // A function to show a loading message
+            function showLoading(message) {
+                timeSlotsDiv.innerHTML = `<p class="text-info">${message}</p>`;
+                timeContainer.style.display = 'block';
+            }
+
+            // Renders the time slots after a date is selected
+            function renderTimeSlotsFromDate() {
+                const selectedDateStr = dateInput.value;
+                if (!selectedDateStr) {
+                    timeSlotsDiv.innerHTML = '';
+                    timeContainer.style.display = 'none';
+                    return;
+                }
+                renderTimeSlots(serviceDuration, selectedDateStr, providerId);
+            }
+
+            // Renders the time slots on the page (Logic from previous fixes)
+            function renderTimeSlots(serviceDuration, selectedDateStr, providerId) {
+                const selectedDate = new Date(selectedDateStr);
+                const dayOfWeek = selectedDate.getDay(); // 0 is Sunday, 6 is Saturday
+                const today = new Date();
+                const isToday = selectedDate.toDateString() === today.toDateString();
+            
+                const workingHours = availabilityData.working_hours[dayOfWeek];
+            
+                if (!workingHours) {
+                    timeSlotsDiv.innerHTML = '<p class="text-danger">Provider is not available on this day.</p>';
+                    return;
+                }
+            
+                const [startHour, startMinute] = workingHours.start.split(':').map(Number);
+                const [endHour, endMinute] = workingHours.end.split(':').map(Number);
+                
+                const currentTime = new Date();
+            
+                let slotStart = new Date(selectedDate);
+                slotStart.setHours(startHour, startMinute, 0, 0);
+                
+                let slotEnd = new Date(selectedDate);
+                slotEnd.setHours(endHour, endMinute, 0, 0);
+            
+                const bookedSlots = availabilityData.booked_slots[selectedDateStr] || [];
+                const manuallyBlockedSlots = availabilityData.manually_blocked_slots[selectedDateStr] || [];
+            
+                let isAnySlotAvailable = false;
+                let slotsHtml = '';
+                
+                while (slotStart.getTime() + serviceDuration * 60 * 1000 <= slotEnd.getTime()) {
+                    const slotTime = slotStart.toTimeString().substring(0, 5);
+                    const slotTimeDisplay = slotStart.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'});
+                    
+                    let isAvailable = true;
+                    let reason = '';
+                    const slotEndMoment = new Date(slotStart.getTime() + serviceDuration * 60 * 1000);
+                    
+                    if (isToday && slotStart.getTime() <= currentTime.getTime()) {
+                        isAvailable = false;
+                        reason = 'Past';
+                    }
+            
+                    if (isAvailable) {
+                        for (const booked of bookedSlots) {
+                            const bookedStart = new Date(selectedDateStr + 'T' + booked.start);
+                            const bookedEnd = new Date(selectedDateStr + 'T' + booked.end);
+                            if (
+                                (slotStart.getTime() < bookedEnd.getTime()) && 
+                                (slotEndMoment.getTime() > bookedStart.getTime())
+                            ) {
+                                isAvailable = false;
+                                reason = `Booked (${booked.service_name})`;
+                                break;
+                            }
+                        }
+                    }
+            
+                    if (isAvailable) {
+                        for (const blocked of manuallyBlockedSlots) {
+                            const blockedStart = new Date(selectedDateStr + 'T' + blocked.start);
+                            const blockedEnd = new Date(selectedDateStr + 'T' + blocked.end);
+                            if (
+                                (slotStart.getTime() < blockedEnd.getTime()) &&
+                                (slotEndMoment.getTime() > blockedStart.getTime())
+                            ) {
+                                isAvailable = false;
+                                reason = `Blocked (${blocked.reason || 'No reason'})`;
+                                break;
+                            }
+                        }
+                    }
+            
+                    if (isAvailable) {
+                        isAnySlotAvailable = true;
+                        slotsHtml += `<button type="button" class="btn btn-sm mb-2 btn-outline-primary available-slot" data-time="${slotTime}">${slotTimeDisplay}</button>`;
+                    } else {
+                        slotsHtml += `<button type="button" class="btn btn-sm mb-2 btn-secondary disabled" title="${reason}">${slotTimeDisplay}</button>`;
+                    }
+            
+                    slotStart.setMinutes(slotStart.getMinutes() + serviceDuration);
+                }
+            
+                timeSlotsDiv.innerHTML = slotsHtml;
+                if (!isAnySlotAvailable) {
+                    timeSlotsDiv.innerHTML = '<p class="text-warning">No available time slots for this day.</p>';
+                }
+
+                document.querySelectorAll('.available-slot').forEach(button => {
+                    button.onclick = () => {
+                        document.querySelectorAll('.available-slot.active').forEach(btn => {
+                            btn.classList.remove('active', 'btn-primary');
+                            btn.classList.add('btn-outline-primary');
+                        });
+                        button.classList.add('active', 'btn-primary');
+                        button.classList.remove('btn-outline-primary');
+                        timeInput.value = button.dataset.time;
+                    };
+                });
+            }
+
+            // Start the process
+            fetchAvailabilityAndRender();
+        });
+    </script>
+{% endblock %}

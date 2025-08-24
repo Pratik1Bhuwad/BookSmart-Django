@@ -1,0 +1,126 @@
+{% extends 'providers/base_provider.html' %}
+{% load static %}
+
+{% block title %}Edit Service{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Edit Service Offering</h1>
+    <p class="lead">Update the details for {{ ps.name }} by {{ ps.provider.user.username }}.</p>
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Edit Details</h5>
+        </div>
+        <div class="card-body">
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger" role="alert">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+            
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label for="{{ form.category.id_for_label }}" class="form-label">{{ form.category.label }}</label>
+                    {{ form.category }}
+                    {% if form.category.errors %}
+                        <div class="text-danger small mt-1">{{ form.category.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    <label for="{{ form.sub_category.id_for_label }}" class="form-label">{{ form.sub_category.label }}</label>
+                    {{ form.sub_category }}
+                    {% if form.sub_category.errors %}
+                        <div class="text-danger small mt-1">{{ form.sub_category.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                        <div class="text-danger small mt-1">{{ form.name.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                        <div class="text-danger small mt-1">{{ form.description.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.duration_minutes.id_for_label }}" class="form-label">{{ form.duration_minutes.label }}</label>
+                        {{ form.duration_minutes }}
+                        {% if form.duration_minutes.errors %}
+                            <div class="text-danger small mt-1">{{ form.duration_minutes.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.price.id_for_label }}" class="form-label">{{ form.price.label }}</label>
+                        {{ form.price }}
+                        {% if form.price.errors %}
+                            <div class="text-danger small mt-1">{{ form.price.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="{{ form.image.id_for_label }}" class="form-label">{{ form.image.label }}</label>
+                    {% if ps.image %}
+                        <div class="mb-2">
+                            <p>Current Image:</p>
+                            <img src="{{ ps.image.url }}" alt="Current Service Image" class="img-thumbnail" style="max-height: 200px;">
+                        </div>
+                    {% endif %}
+                    {{ form.image }}
+                    {% if form.image.errors %}
+                        <div class="text-danger small mt-1">{{ form.image.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Service Locations</label>
+                    <div class="form-check">
+                        {{ form.locations }}
+                        {% if form.locations.errors %}
+                            <div class="text-danger small mt-1">{{ form.locations.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-success">Update Service</button>
+            </form>
+        </div>
+    </div>
+
+
+
+<script>
+    const categorySelect = document.getElementById("id_category");
+    const subCategorySelect = document.getElementById("id_sub_category");
+
+    const getSubcategoriesUrl = "{% url 'get_subcategories' 0 %}".replace('/0/', '/');
+
+    categorySelect.addEventListener("change", function() {
+        const categoryId = this.value;
+
+        subCategorySelect.innerHTML = '<option value="">---------</option>';
+
+        if (categoryId) {
+            fetch(getSubcategoriesUrl + categoryId + '/')
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(sub => {
+                        const option = document.createElement('option');
+                        option.value = sub.id;
+                        option.text = sub.name;
+                        subCategorySelect.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Error fetching subcategories:', error));
+        }
+    });
+</script>
+{% endblock %}

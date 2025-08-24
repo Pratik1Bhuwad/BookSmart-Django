@@ -1,0 +1,58 @@
+<!-- providers/templates/providers/manage_appointments.html -->
+{% extends 'providers/base_provider.html' %}
+
+{% block title %}Manage Appointments{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Manage Appointments</h1>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Pending Appointments</h5>
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for appt in pending_appointments %}
+                        <li class="list-group-item">
+                            <h6>{{ appt.provider_service.name }} with {{ appt.client.username }}</h6>
+                            <p class="small text-muted mb-1">
+                                <strong>Date:</strong> {{ appt.date }}<br>
+                                <strong>Time:</strong> {{ appt.time_slot.start_time }}
+                            </p>
+                            <form method="post" action="{% url 'manage_appointments' %}" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="appointment_id" value="{{ appt.id }}">
+                                <button type="submit" name="action" value="approve" class="btn btn-sm btn-success">Approve</button>
+                                <button type="submit" name="action" value="reject" class="btn btn-sm btn-danger">Reject</button>
+                            </form>
+                        </li>
+                    {% empty %}
+                        <li class="list-group-item text-muted">No pending appointments.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Approved Appointments</h5>
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for appt in approved_appointments %}
+                        <li class="list-group-item">
+                            <h6>{{ appt.provider_service.name }} with {{ appt.client.username }}</h6>
+                            <p class="small text-muted mb-1">
+                                <strong>Date:</strong> {{ appt.date }}<br>
+                                <strong>Time:</strong> {{ appt.time_slot.start_time }}
+                            </p>
+                            <span class="badge bg-success">Approved</span>
+                        </li>
+                    {% empty %}
+                        <li class="list-group-item text-muted">No approved appointments.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endblock %}

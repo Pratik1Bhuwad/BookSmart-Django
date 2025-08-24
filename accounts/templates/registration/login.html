@@ -1,0 +1,113 @@
+<!-- accounts/templates/registration/login.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+            padding: 32px;
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
+        }
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.2s ease-in-out;
+            box-sizing: border-box;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #374151;
+            font-size: 0.9rem;
+        }
+        .submit-button {
+            width: 100%;
+            padding: 14px;
+            background-color: #4f46e5;
+            color: white;
+            font-weight: 600;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+            font-size: 1.1rem;
+        }
+        .submit-button:hover {
+            background-color: #4338ca;
+        }
+        .errorlist {
+            list-style: none;
+            padding: 0;
+            margin-top: 4px;
+            margin-bottom: 10px;
+            color: #ef4444;
+            font-size: 0.85rem;
+        }
+        .errorlist li {
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">Login</h1>
+
+        {% if form.errors %}
+            <ul class="errorlist">
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
+                {{ form.username }}
+            </div>
+            <div class="form-group">
+                <label for="{{ form.password.id_for_label }}" class="form-label">Password</label>
+                {{ form.password }}
+            </div>
+            <button type="submit" class="submit-button">Login</button>
+        </form>
+
+        <div class="mt-8 text-center">
+            <p class="text-gray-600">Don't have an account? <a href="{% url 'register' %}" class="text-indigo-600 hover:text-indigo-800 font-medium">Register here</a></p>
+        </div>
+    </div>
+</body>
+</html>

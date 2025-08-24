@@ -1,0 +1,71 @@
+<!-- appointments/templates/appointments/appointment_request.html -->
+{% extends 'appointments/base.html' %}
+
+{% block title %}Book {{ provider_service.name }}{% endblock %}
+
+{% block content %}
+    <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">Request an Appointment</h1>
+    <h4 class="text-center text-muted mb-4">{{ provider_service.name }} by {{ provider_service.provider.user.username }}</h4>
+
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="provider_service" value="{{ provider_service.pk }}">
+        <input type="hidden" name="client" value="{{ request.user.pk }}">
+        
+        <div class="form-group mb-3">
+            <label for="id_date" class="form-label">Date</label>
+            <input type="date" name="date" id="id_date" class="form-control">
+        </div>
+        
+        <div class="form-group mb-3">
+            <label for="id_time_slot" class="form-label">Available Time Slots</label>
+            <select name="time_slot" id="id_time_slot" class="form-select">
+                <!-- Time slots will be populated via AJAX -->
+            </select>
+        </div>
+        
+        <div class="form-group mb-3">
+            <label for="id_location" class="form-label">Location</label>
+            <select name="location" id="id_location" class="form-select">
+                {% for location in provider_service.locations.all %}
+                    <option value="{{ location.pk }}">{{ location.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <button type="submit" class="btn btn-primary w-100 mt-4">Send Booking Request</button>
+    </form>
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            var dateInput = $('#id_date');
+            var timeSlotSelect = $('#id_time_slot');
+            var providerServiceId = $('input[name="provider_service"]').val();
+            
+            dateInput.change(function() {
+                var selectedDate = $(this).val();
+                if (selectedDate && providerServiceId) {
+                    $.ajax({
+                        url: '/providers/api/time-slots/',
+                        data: {
+                            'provider_service_id': providerServiceId,
+                            'date': selectedDate
+                        },
+                        dataType: 'json',
+                        success: function(data) {
+                            timeSlotSelect.empty();
+                            timeSlotSelect.append($('<option>').val('').text('--- Select a time slot ---'));
+                            $.each(data, function(key, value) {
+                                timeSlotSelect.append($('<option>').val(value.id).text(value.start_time));
+                            });
+                        }
+                    });
+                } else {
+                    timeSlotSelect.empty();
+                    timeSlotSelect.append($('<option>').val('').text('--- Select a time slot ---'));
+                }
+            });
+        });
+    </script>
+{% endblock %}
