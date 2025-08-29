@@ -19,40 +19,7 @@ A robust, multi-role Django booking application. This project features a service
 * **Database**: SQLite (Development)
 * **Payment Gateway**: Stripe
 
-## Getting Started
-
-### Prerequisites
-
-* Python 3.8+
-* pip
-
-### Installation
-
-1.  **Clone the repository:**
-    ```bash
-    git clone [https://github.com/Pratik1Bhuwad/BookSmart-Django.git](https://github.com/Pratik1Bhuwad/BookSmart-Django.git)
-    cd BookSmart-Django
-    ```
-
-2.  **Create and activate a virtual environment:**
-    ```bash
-    python -m venv venv
-    .\venv\Scripts\activate
-    ```
-
-3.  **Install dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-4.  **Set up your database:**
-    ```bash
-    python manage.py makemigrations
-    python manage.py migrate
-    python manage.py createsuperuser
-    ```
-
-5.  **Run the development server:**
+ **Run the development server:**
     ```bash
     python manage.py runserver
     ```
